@@ -1,0 +1,175 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  organizations Organization[]
+  siteProfiles  SiteProfile[]
+  documents     Document[]
+  generationLogs GenerationLog[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  siteProfiles SiteProfile[]
+
+  @@map("organizations")
+}
+
+model SiteProfile {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  orgId     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Website basics
+  domain              String?
+  companyType         String? // Einzelunternehmen, GbR, GmbH, UG, e.V., etc.
+  companyName         String?
+  addressStreet       String?
+  addressCity         String?
+  addressZip          String?
+  addressCountry      String? @default("DE")
+  contactEmail        String?
+  contactPhone        String?
+  representatives     String? // JSON array of names
+  registerInfo        String? // Handelsregister info
+  vatId               String?
+  responsiblePerson   String? // Verantwortlich für Inhalte
+
+  // Privacy related
+  hostingProvider     String?
+  cms                 String?
+  cdn                 String?
+  analytics           Json? // { provider: "GA4" | "Matomo", enabled: boolean }
+  tagManager          String?
+  marketingPixels     Json? // { Meta: boolean, TikTok: boolean, ... }
+  embeddedContent     Json? // { YouTube: boolean, Maps: boolean, ... }
+  newsletterTool      String?
+  contactForm         Boolean @default(false)
+  bookingSystem       String?
+  userAccounts        Boolean @default(false)
+  comments            Boolean @default(false)
+  recaptcha           Boolean @default(false)
+
+  // Cookies & consent
+  setsCookies         Boolean @default(false)
+  cookieCategories    Json? // { essential: boolean, statistics: boolean, marketing: boolean }
+  consentMode         String? // opt-in, opt-out
+  cmpProvider         String? // Cookie consent management platform
+
+  // Output preferences
+  tone                String? @default("formal") // formal, neutral
+  region              String? @default("DE") // DE, AT, CH
+  language            String? @default("de")
+
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization        Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  documents           Document[]
+
+  @@map("site_profiles")
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  type        String   // impressum, datenschutz, cookie_policy, cookie_consent
+  title       String
+  content     Json     // Structured document content
+  htmlContent String?  // Rendered HTML
+  textContent String?  // Rendered plain text
+  version     Int      @default(1)
+  siteProfileId String
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  siteProfile SiteProfile @relation(fields: [siteProfileId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([siteProfileId])
+  @@map("documents")
+}
+
+model GenerationLog {
+  id          String   @id @default(cuid())
+  userId      String
+  documentType String
+  model       String?  // OpenAI model used
+  tokensUsed  Int?
+  status      String   // success, error
+  error       String?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("generation_logs")
+}
