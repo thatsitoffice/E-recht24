@@ -1,0 +1,42 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { AlertCircle } from 'lucide-react';
+
+const errorMessages: Record<string, string> = {
+  Configuration: 'Es gibt ein Problem mit der Server-Konfiguration.',
+  AccessDenied: 'Sie haben keinen Zugriff auf diese Seite.',
+  Verification: 'Der Verifizierungs-Link ist abgelaufen oder wurde bereits verwendet.',
+  Default: 'Ein Fehler ist aufgetreten.',
+};
+
+const error = Astro.url.searchParams.get('error') || 'Default';
+const message = errorMessages[error] || errorMessages.Default;
+---
+
+<Layout>
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-secondary/20 p-4">
+    <Card class="w-full max-w-md">
+      <CardHeader class="text-center">
+        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+          <AlertCircle class="h-6 w-6 text-destructive" />
+        </div>
+        <CardTitle class="text-2xl">Fehler</CardTitle>
+        <CardDescription>{message}</CardDescription>
+      </CardHeader>
+      <CardContent class="space-y-4">
+        <div class="flex gap-2">
+          <a href="/auth/signin" class="flex-1">
+            <Button class="w-full">Erneut versuchen</Button>
+          </a>
+          <a href="/" class="flex-1">
+            <Button variant="outline" class="w-full">
+              Zur Startseite
+            </Button>
+          </a>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+</Layout>

@@ -1,0 +1,11 @@
+---
+import Layout from '../layouts/Layout.astro';
+import GeneratorWizard from '../components/GeneratorWizard';
+import { Providers } from '../components/Providers';
+---
+
+<Layout>
+  <Providers client:load>
+    <GeneratorWizard client:load />
+  </Providers>
+</Layout>
